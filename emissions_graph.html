@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emissions Reduction Graph</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        #controls { margin-bottom: 20px; }
+        label { margin-right: 10px; }
+        input { margin-right: 20px; }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <label for="baseYear">Base Year:</label>
+        <input type="number" id="baseYear" value="2020" min="2020" max="2029">
+        <label for="targetYear">Target Year:</label>
+        <input type="number" id="targetYear" value="2030" min="2021" max="2030">
+    </div>
+    <canvas id="emissionsChart"></canvas>
+
+    <script>
+        const baseYearInput = document.getElementById('baseYear');
+        const targetYearInput = document.getElementById('targetYear');
+        const ctx = document.getElementById('emissionsChart').getContext('2d');
+        let chart;
+
+        function calculateReduction(baseYear, targetYear) {
+            const years = targetYear - baseYear;
+            const baseReduction = 0.042; // 4.2% annual reduction
+            const adjustedReduction = baseYear > 2020 ? baseReduction * (2030 - 2020) / years : baseReduction;
+            return (1 - Math.pow(1 - adjustedReduction, years)) * 100;
+        }
+
+        function generateChartData(baseYear, targetYear) {
+            let data = [];
+            const reduction = calculateReduction(baseYear, targetYear) / 100;
+            for (let year = baseYear; year <= targetYear; year++) {
+                data.push({
+                    x: year,
+                    y: 100 * Math.pow(1 - reduction, year - baseYear)
+                });
+            }
+            return data;
+        }
+
+        function updateChart() {
+            const baseYear = parseInt(baseYearInput.value);
+            const targetYear = parseInt(targetYearInput.value);
+            const data = generateChartData(baseYear, targetYear);
+
+            if (chart) {
+                chart.data.datasets[0].data = data;
+                chart.options.scales.x.min = baseYear;
+                chart.options.scales.x.max = targetYear;
+                chart.update();
+            } else {
+                chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        datasets: [{
+                            label: 'Emissions',
+                            data: data,
+                            borderColor: 'rgb(75, 192, 192)',
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            x: {
+                                type: 'linear',
+                                title: {
+                                    display: true,
+                                    text: 'Year'
+                                },
+                                min: baseYear,
+                                max: targetYear
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Emissions (%)'
+                                },
+                                min: 0,
+                                max: 100
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        baseYearInput.addEventListener('change', updateChart);
+        targetYearInput.addEventListener('change', updateChart);
+
+        updateChart();
+    </script>
+</body>
+</html>
